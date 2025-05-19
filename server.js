@@ -1,10 +1,9 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const { Client, GatewayIntentBits } = require('discord.js');
 require('dotenv').config();
 
 const app = express();
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json()); // Add JSON parser middleware
 
 const client = new Client({
   intents: [
@@ -20,17 +19,17 @@ client.once('ready', () => {
 });
 
 app.post('/assign-role', async (req, res) => {
-  const { userId, roleId } = req.body;
-  if (!userId || !roleId) {
-    return res.status(400).send('Missing userId or roleId');
+  const { guildId, userId, roleId } = req.body;
+  if (!guildId || !userId || !roleId) {
+    return res.status(400).send('Missing guildId, userId or roleId');
   }
 
   try {
-    const guild = await client.guilds.fetch(process.env.GUILD_ID);
+    const guild = await client.guilds.fetch(guildId);
     const member = await guild.members.fetch(userId);
 
     await member.roles.add(roleId);
-    console.log(`Assigned role ${roleId} to user ${userId}`);
+    console.log(`Assigned role ${roleId} to user ${userId} in guild ${guildId}`);
 
     res.send('Role assigned successfully.');
   } catch (error) {
