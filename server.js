@@ -70,7 +70,7 @@ app.post('/check-role', async (req, res) => {
   }
 });
 
-// HWID Reset Button Message with Embed
+// HWID Reset Request
 app.post('/send-reset-request', async (req, res) => {
   const {
     username,
@@ -94,7 +94,7 @@ app.post('/send-reset-request', async (req, res) => {
 
     const embed = {
       title: '🔁 HWID Reset Request',
-      color: 0x3498db, // Blue
+      color: 0x3498db,
       thumbnail: { url: avatarUrl },
       fields: [
         { name: '👤 Username', value: username, inline: true },
@@ -134,7 +134,7 @@ app.post('/send-reset-request', async (req, res) => {
   }
 });
 
-// Handle button interactions
+// Interaction Handler for Accept / Decline / Done
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isButton()) return;
 
@@ -153,24 +153,47 @@ client.on(Events.InteractionCreate, async interaction => {
 
     await interaction.message.edit({ components: [doneRow] });
 
+    const acceptEmbed = {
+      title: '✅ HWID Reset Accepted',
+      color: 0x2ecc71,
+      description: 'Your HWID reset request has been **approved and processed**.\n\n🛑 **Note:** This was your **1-time reset**. You will not be able to request again.',
+      footer: { text: 'Thank you for using our service.' }
+    };
+
     try {
-      await targetUser.send('✅ Your HWID reset request has been **accepted**. Processing now...');
+      await targetUser.send({ embeds: [acceptEmbed] });
     } catch (err) {
       console.error(`Failed to send DM to user ${targetUserId}:`, err);
     }
+
   } else if (action === 'decline') {
     await interaction.reply({ content: `❌ Declined HWID reset for <@${targetUserId}>.`, ephemeral: true });
 
+    const declineEmbed = {
+      title: '❌ HWID Reset Declined',
+      color: 0xe74c3c,
+      description: 'Sorry, your HWID reset request has been **declined**.\n\n🚫 **Please do not open another request.** Repeated attempts may result in a **ban from the app** for spamming.',
+      footer: { text: 'Repeated abuse may lead to access being revoked.' }
+    };
+
     try {
-      await targetUser.send('❌ Your HWID reset request has been **declined**.');
+      await targetUser.send({ embeds: [declineEmbed] });
     } catch (err) {
       console.error(`Failed to send DM to user ${targetUserId}:`, err);
     }
+
   } else if (action === 'done') {
     await interaction.reply({ content: `✅ Marked HWID reset as completed for <@${targetUserId}>.`, ephemeral: true });
 
     try {
-      await targetUser.send('✅ Your HWID has now been **reset** successfully.');
+      await targetUser.send({
+        embeds: [{
+          title: '✅ HWID Reset Completed',
+          color: 0x3498db,
+          description: 'Your HWID has now been **reset** successfully.\n\n🔁 **You may now use the app again.**',
+          footer: { text: 'You cannot request another reset.' }
+        }]
+      });
     } catch (err) {
       console.error(`Failed to send DM to user ${targetUserId}:`, err);
     }
