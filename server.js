@@ -1,5 +1,13 @@
 const express = require('express');
-const { Client, GatewayIntentBits, Partials, ActionRowBuilder, ButtonBuilder, ButtonStyle, Events } = require('discord.js');
+const {
+  Client,
+  GatewayIntentBits,
+  Partials,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  Events
+} = require('discord.js');
 require('dotenv').config();
 
 const app = express();
@@ -62,30 +70,60 @@ app.post('/check-role', async (req, res) => {
   }
 });
 
-// HWID Reset Button Message
+// HWID Reset Button Message with Embed
 app.post('/send-reset-request', async (req, res) => {
-  const { userId, username } = req.body;
-  if (!userId || !username) {
-    return res.status(400).send('Missing userId or username');
+  const {
+    username,
+    userId,
+    avatarUrl,
+    keyUsed,
+    machine,
+    hwid,
+    cpu,
+    gpu,
+    motherboard,
+    disk
+  } = req.body;
+
+  if (!username || !userId) {
+    return res.status(400).send('Missing username or userId');
   }
 
   try {
     const channel = await client.channels.fetch('1375589829940871349');
 
-    const row = new ActionRowBuilder()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId(`accept_${userId}`)
-          .setLabel('✅ Accept')
-          .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-          .setCustomId(`decline_${userId}`)
-          .setLabel('❌ Decline')
-          .setStyle(ButtonStyle.Danger)
-      );
+    const embed = {
+      title: '🔁 HWID Reset Request',
+      color: 0x3498db, // Blue
+      thumbnail: { url: avatarUrl },
+      fields: [
+        { name: '👤 Username', value: username, inline: true },
+        { name: '🆔 User ID', value: userId, inline: true },
+        { name: '🔑 Key Used', value: keyUsed || 'N/A', inline: false },
+        { name: '💻 Machine', value: machine || 'N/A', inline: true },
+        { name: '🧾 HWID', value: hwid || 'N/A', inline: false },
+        { name: '🧠 CPU', value: cpu || 'N/A', inline: false },
+        { name: '🎮 GPU', value: gpu || 'N/A', inline: false },
+        { name: '🪛 Motherboard', value: motherboard || 'N/A', inline: false },
+        { name: '💾 Disk', value: disk || 'N/A', inline: false },
+        { name: '🕒 Time', value: new Date().toLocaleString(), inline: false }
+      ]
+    };
+
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`accept_${userId}`)
+        .setLabel('✅ Accept')
+        .setStyle(ButtonStyle.Success),
+      new ButtonBuilder()
+        .setCustomId(`decline_${userId}`)
+        .setLabel('❌ Decline')
+        .setStyle(ButtonStyle.Danger)
+    );
 
     await channel.send({
       content: `🔁 HWID Reset Request from **${username}** (ID: ${userId})`,
+      embeds: [embed],
       components: [row]
     });
 
@@ -106,13 +144,12 @@ client.on(Events.InteractionCreate, async interaction => {
   if (action === 'accept') {
     await interaction.reply({ content: `✅ Accepted HWID reset for <@${targetUserId}>.`, ephemeral: true });
 
-    const doneRow = new ActionRowBuilder()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId(`done_${targetUserId}`)
-          .setLabel('✅ Done')
-          .setStyle(ButtonStyle.Primary)
-      );
+    const doneRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`done_${targetUserId}`)
+        .setLabel('✅ Done')
+        .setStyle(ButtonStyle.Primary)
+    );
 
     await interaction.message.edit({ components: [doneRow] });
 
@@ -138,14 +175,13 @@ client.on(Events.InteractionCreate, async interaction => {
       console.error(`Failed to send DM to user ${targetUserId}:`, err);
     }
 
-    const disabledRow = new ActionRowBuilder()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId(`done_${targetUserId}`)
-          .setLabel('✅ Done')
-          .setStyle(ButtonStyle.Primary)
-          .setDisabled(true)
-      );
+    const disabledRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`done_${targetUserId}`)
+        .setLabel('✅ Done')
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(true)
+    );
 
     await interaction.message.edit({ components: [disabledRow] });
   }
